@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 
@@ -23,8 +24,11 @@ def main(args=None):
         print(f'Error initializing logger: {type(e).__name__} {e}')
         sys.exit(2)
 
+    logger.info("APP started")
+
     parser = argparse.ArgumentParser(description='Scrape player info pages.')
     parser.add_argument('-i', '--id', help="Page ID to scrape. Single int or range.", required=True)
+    parser.add_argument('-v', '--verbose', help="Verbose logging.", required=False, default=False, action='store_true')
 
     try:
         args = parser.parse_args(args)
@@ -32,18 +36,29 @@ def main(args=None):
         logger.critical(f'Error parsing args: {type(e).__name__} {e}')
         sys.exit(1)
 
+    logger.info("Args parsed")
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Debug enabled")
+
     pages = list(map(int, map(str.strip, args.id.split('-'))))
     if len(pages) == 1:
         pages.append(pages[0])
 
+    logger.debug(f"Will parse pages in range {pages}")
+
     try:
+        logger.debug("Connecting to the DB")
         engine = create_engine(os.getenv("MOSBOT_MYSQL"))
+        logger.debug("Connected to the DB")
     except Exception as e:
         logger.critical(f'Error initializing DB: {type(e).__name__} {e}')
         sys.exit(2)
 
     total = parsed = empty = error = 0
     for page_id in range(pages[0], pages[1] + 1):
+        logger.debug(f"Parsing page {page_id}")
         total += 1
         try:
             parser = PlayerInfoParser(logger, engine)

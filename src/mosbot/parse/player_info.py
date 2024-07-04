@@ -60,8 +60,12 @@ class PlayerInfoParser:
         return response.content
 
     def parse_player(self, contents: bytes) -> PlayerInfo | None:
+        start_time = time()
         soup = BeautifulSoup(contents, 'html.parser')
+        end_time = time()
+        self.logger.info(f"Loaded HTML contents in {end_time - start_time}")
 
+        start_time = time()
         player_info = soup.select_one("#pers-player-info")
         if not player_info:
             return None
@@ -93,7 +97,7 @@ class PlayerInfoParser:
 
         blocked = True if player_info.select_one(".blocked") else False
 
-        return PlayerInfo(
+        result = PlayerInfo(
             player_id=player_id,
             fraction=fraction,
             name=name,
@@ -115,6 +119,10 @@ class PlayerInfoParser:
             blocked=blocked,
             clan_id=clan_id
         )
+        end_time = time()
+        self.logger.info(f"Parsed items in {end_time - start_time}")
+        return result
+
 
     def save_results(self, page_id, status, incoming_player: PlayerInfo | None) -> None:
         self.logger.info(f"Saving results for {page_id=} with {status=} and {incoming_player=}")
