@@ -7,6 +7,7 @@ import sys
 def get_logger(name, verbose=False, stdout=True, syslog=False):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logger.propagate = False
 
     if getattr(logger, 'init', None):
         return logger
