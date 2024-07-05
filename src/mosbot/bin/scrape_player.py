@@ -38,7 +38,7 @@ def main(args=None):
     logger.info(f"Received {args=}")
 
     parser = argparse.ArgumentParser(description='Scrape player info pages.')
-    parser.add_argument('-i', '--id', help="Page ID to scrape. Single int or range.", required=True)
+    parser.add_argument('-i', '--id', help="Page ID to scrape. Single int or range.", required=True, nargs='+')
     parser.add_argument('-v', '--verbose', help="Verbose logging.", required=False, default=False, action='store_true')
 
     try:
@@ -51,12 +51,6 @@ def main(args=None):
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug enabled")
 
-    pages = list(map(int, map(str.strip, args.id.split('-'))))
-    if len(pages) == 1:
-        pages.append(pages[0])
-
-    logger.debug(f"Will parse pages in range {pages}")
-
     try:
         logger.debug("Connecting to the DB")
         engine = create_engine(os.getenv("MOSBOT_MYSQL"))
@@ -66,7 +60,7 @@ def main(args=None):
         sys.exit(2)
 
     total = parsed = empty = error = 0
-    for page_id in range(pages[0], pages[1] + 1):
+    for page_id in args.id:
         logger.debug(f"Parsing page {page_id}")
         total += 1
         try:
@@ -82,7 +76,7 @@ def main(args=None):
             continue
 
     return {
-        "range": f"{pages[0]} - {pages[1]}",
+        "processed_pages": ','.join(args.id),
         "total": total,
         "parsed": parsed,
         "empty": empty,
