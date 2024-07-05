@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import os
 import sys
@@ -11,7 +12,16 @@ from mosbot.parse.player_info import PlayerInfoParser
 
 
 def handler(event, context):
-    return main(event)
+    print(f"Received {event=}")
+
+    if 'Records' in event:
+        response = []
+        for record in event['Records']:
+            data = json.loads(record['body'])
+            res = main(data)
+            response.append(res)
+    else:
+        return main(event)
 
 
 def main(args=None):
@@ -24,7 +34,8 @@ def main(args=None):
         print(f'Error initializing logger: {type(e).__name__} {e}')
         sys.exit(2)
 
-    logger.info("APP started")
+    logger.info("APP started with")
+    logger.info(f"Received {args=}")
 
     parser = argparse.ArgumentParser(description='Scrape player info pages.')
     parser.add_argument('-i', '--id', help="Page ID to scrape. Single int or range.", required=True)
@@ -35,8 +46,6 @@ def main(args=None):
     except Exception as e:
         logger.critical(f'Error parsing args: {type(e).__name__} {e}')
         sys.exit(1)
-
-    logger.info("Args parsed")
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
