@@ -62,5 +62,5 @@ class PlayerPage(BaseModel):
 if __name__ == '__main__':
     from dotenv import load_dotenv
     load_dotenv()
-    engine = create_engine(getenv("MOSBOT_MYSQL"), echo=True)
+    engine = create_engine(getenv("MOSBOT_DB_CS"), echo=True)
     BaseModel.metadata.create_all(engine)

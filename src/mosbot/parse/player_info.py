@@ -10,8 +10,10 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, select, Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
+from tenacity import retry, stop_after_delay, stop_after_attempt, wait_random
 
 from mosbot.common.db import PlayerPage, Player
+from mosbot.common.logger import get_logger
 
 
 @dataclass
@@ -123,7 +125,10 @@ class PlayerInfoParser:
         self.logger.info(f"Parsed items in {end_time - start_time}")
         return result
 
-
+    @retry(
+        stop=(stop_after_delay(10) | stop_after_attempt(5)),
+        wait=wait_random(min=1, max=3)
+    )
     def save_results(self, page_id, status, incoming_player: PlayerInfo | None) -> None:
         self.logger.info(f"Saving results for {page_id=} with {status=} and {incoming_player=}")
         with Session(self.engine) as session:
@@ -203,13 +208,11 @@ class PlayerInfoParser:
 
 
 if __name__ == "__main__":
-    from mosbot.common.logger import get_logger
-
     # load env from parent directory
     load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../.env"))
 
     logger = get_logger("parser")
-    _engine = create_engine(os.getenv("MOSBOT_MYSQL"), echo=True)
+    _engine = create_engine(os.getenv("MOSBOT_DB_CS"), echo=True)
 
     parser = PlayerInfoParser(logger, _engine)
 

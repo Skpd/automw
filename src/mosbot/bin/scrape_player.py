@@ -53,7 +53,7 @@ def main(args=None):
 
     try:
         logger.debug("Connecting to the DB")
-        engine = create_engine(os.getenv("MOSBOT_MYSQL"))
+        engine = create_engine(os.getenv("MOSBOT_DB_CS"))
         logger.debug("Connected to the DB")
     except Exception as e:
         logger.critical(f'Error initializing DB: {type(e).__name__} {e}')
