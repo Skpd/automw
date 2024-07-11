@@ -4,11 +4,12 @@ import logging
 import os
 import sys
 
+import requests
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
 from mosbot.common.logger import get_logger
-from mosbot.parse.player_info import PlayerInfoParser
+from mosbot.parse.login_checker import LoginChecker
 
 
 def handler(event, context):
@@ -29,15 +30,16 @@ def main(args=None):
     load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../.env"))
 
     try:
-        logger = get_logger("parser")
+        logger = get_logger("logins")
     except Exception as e:
         print(f'Error initializing logger: {type(e).__name__} {e}')
         sys.exit(2)
 
     logger.info(f"Received {args=}")
 
-    parser = argparse.ArgumentParser(description='Scrape player info pages.')
-    parser.add_argument('-i', '--id', help="Page ID to scrape. Single int or range.", required=True, nargs='+')
+    parser = argparse.ArgumentParser(description='Check password-less logins.')
+    parser.add_argument('-n', '--name', help="Player name to check.", required=True, nargs='+', action='store', type=str)
+    parser.add_argument('--known-logins', help="Logins to disable bouncer.", required=False, nargs='+')
     parser.add_argument('-v', '--verbose', help="Verbose logging.", required=False, default=False, action='store_true')
 
     try:
@@ -50,6 +52,9 @@ def main(args=None):
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug enabled")
 
+    ip = requests.get("https://checkip.amazonaws.com").text.strip()
+    logger.info(f"Starting on {ip}")
+
     try:
         logger.debug("Connecting to the DB")
         engine = create_engine(os.getenv("MOSBOT_DB_CS"))
@@ -58,30 +63,17 @@ def main(args=None):
         logger.critical(f'Error initializing DB: {type(e).__name__} {e}')
         sys.exit(2)
 
-    parser = PlayerInfoParser(logger, engine)
+    parser = LoginChecker(logger, engine, args.known_logins)
 
-    total = parsed = empty = error = 0
-    for page_id in args.id:
-        logger.debug(f"Parsing page {page_id}")
-        total += 1
+    for name in args.name:
+        # unquote name
+        if name[0] == "'" and name[-1] == "'":
+            name = name[1:-1]
+        logger.info(f"Processing {name}")
         try:
-            result = parser.process(page_id)
-            if result:
-                parsed += 1
-            else:
-                empty += 1
+            parser.process(name)
         except Exception as e:
-            logger.exception(f'Error processing page {page_id}: {type(e).__name__} {e}')
-            error += 1
-            continue
-
-    return {
-        "processed_pages": ','.join(args.id),
-        "total": total,
-        "parsed": parsed,
-        "empty": empty,
-        "error": error
-    }
+            logger.error(f"Processing {name=} failed: {type(e).__name__} {e}")
 
 
 if __name__ == '__main__':

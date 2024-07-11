@@ -209,7 +209,7 @@ class PlayerInfoParser:
 
 if __name__ == "__main__":
     # load env from parent directory
-    load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../.env"))
+    load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../.env"))
 
     logger = get_logger("parser")
     _engine = create_engine(os.getenv("MOSBOT_DB_CS"), echo=True)

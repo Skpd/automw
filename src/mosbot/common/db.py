@@ -44,6 +44,9 @@ class Player(BaseModel):
 
     clan_id: Mapped[Optional[int]] = mapped_column(Integer)
 
+    page = relationship("PlayerPage", uselist=False, backref="player")
+    auth = relationship("PlayerAuth", uselist=False, backref="player")
+
     def __repr__(self) -> str:
         return f"Player(id={self.id!r})"
 
@@ -53,10 +56,20 @@ class PlayerPage(BaseModel):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     status: Mapped[str] = mapped_column(String(30))
     player_id: Mapped[Optional[int]] = mapped_column(ForeignKey("player.id"))
-    player: Mapped["Player"] = relationship()
 
     def __repr__(self) -> str:
         return f"PlayerPage(id={self.id!r}, status={self.status!r}), player_id={self.player_id}"
+
+
+class PlayerAuth(BaseModel):
+    __tablename__ = "player_auth"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("player.id"))
+    email: Mapped[str] = mapped_column(String(50))
+    password: Mapped[Optional[str]] = mapped_column(String(50))
+
+    def __repr__(self) -> str:
+        return f"PlayerAuth(id={self.player_id!r}, email={self.email!r})"
 
 
 if __name__ == '__main__':
