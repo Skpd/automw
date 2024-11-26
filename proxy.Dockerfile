@@ -12,8 +12,8 @@ RUN python -m venv ${FUNCTION_DIR}/venv \
  && ${FUNCTION_DIR}/venv/bin/pip --no-cache-dir install awslambdaric \
  && ${FUNCTION_DIR}/venv/bin/pip --no-cache-dir install -r ${FUNCTION_DIR}/requirements.txt
 
-COPY ./src ./pyproject.toml /opt/mosbot/
-RUN ${FUNCTION_DIR}/venv/bin/pip --no-cache-dir install /opt/mosbot
+COPY . ${FUNCTION_DIR}/mosbot
+RUN ${FUNCTION_DIR}/venv/bin/pip --no-cache-dir install ${FUNCTION_DIR}/mosbot
 
 # Use a slim version of the base Python image to reduce the final image size
 FROM python:3.12-slim
@@ -23,4 +23,4 @@ WORKDIR ${FUNCTION_DIR}
 COPY --from=build-image ${FUNCTION_DIR} ${FUNCTION_DIR}
 
 ENTRYPOINT [ "venv/bin/python", "-m", "awslambdaric" ]
-CMD [ "mosbot.bin.scrape_player.handler" ]
+CMD [ "mosbot.bin.proxy.handler" ]

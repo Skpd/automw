@@ -10,8 +10,37 @@ from selenium.webdriver.common.by import By
 ID = 7387684
 
 
+def load_cookies(driver, selenium_cookie_file) -> bool:
+    if os.path.exists(selenium_cookie_file):
+        print("Loading cookies from " + selenium_cookie_file)
+        cookies = pickle.load(open(selenium_cookie_file, "rb"))
+
+        # Enables network tracking, so we may use Network.setCookie method
+        driver.execute_cdp_cmd('Network.enable', {})
+
+        # Iterate through pickle dict and add all the cookies
+        for cookie in cookies:
+            print(cookie['name'], cookie['value'])
+            continue
+            # Fix issue Chrome exports 'expiry' key but expects 'expire' on import
+            if 'expiry' in cookie:
+                cookie['expires'] = cookie['expiry']
+                del cookie['expiry']
+
+            # Set the actual cookie
+            driver.execute_cdp_cmd('Network.setCookie', cookie)
+        exit()
+        # Disable network tracking
+        driver.execute_cdp_cmd('Network.disable', {})
+        print("Cookies loaded")
+        return True
+
+    print("Cookie file " + selenium_cookie_file + " does not exist.")
+    return False
+
+
 def login(driver: WebDriver, name: str, password: str):
-    driver.get("https://www.moswar.ru/login/")
+    driver.get(f"{base_url}/login/")
 
     driver.find_element(by=By.CSS_SELECTOR, value='.login form input[name=email]').send_keys(name)
     driver.find_element(by=By.CSS_SELECTOR, value='.login form input[name=password]').send_keys(password)
@@ -19,7 +48,7 @@ def login(driver: WebDriver, name: str, password: str):
 
 
 def patrol_action(driver: WebDriver):
-    driver.get("https://www.moswar.ru/alley/")
+    driver.get(f"{base_url}/alley/")
 
     try:
         time_left = re.sub("[^0-9]", "", driver.find_element(by=By.CSS_SELECTOR, value='#patrolForm .timeleft').text)
@@ -47,24 +76,24 @@ def patrol_action(driver: WebDriver):
 
 
 if __name__ == '__main__':
+    cookie_path = os.getenv('COOKIE_PATH', './data')
+    base_domain = "demwybahysknfu2xe55dpl3meu0jyewv.lambda-url.eu-central-1.on.aws"
+    base_url = "https://demwybahysknfu2xe55dpl3meu0jyewv.lambda-url.eu-central-1.on.aws"
+
     chrome_options = selenium.webdriver.ChromeOptions()
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    chrome_options.add_experimental_option("prefs", prefs)
+    chrome_options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+    # chrome_options.add_argument('--headless=new')
+
+    cookie_file = f"{cookie_path}/{ID}.cookie"
 
     _driver = selenium.webdriver.Chrome(options=chrome_options)
-    _driver.get("https://www.moswar.ru/")
 
-    if os.path.exists(f"{ID}.cookie"):
-        with open(f"{ID}.cookie", "rb") as cookie_file:
-            cookies = pickle.load(cookie_file)
-            for cookie in cookies:
-                _driver.add_cookie(cookie)
-    else:
+    if not load_cookies(_driver, cookie_file):
         login(_driver, name="huh@skpd.dev", password=".26y.YPmfzTQW65")
-
-    _driver.get("https://www.moswar.ru/player/")
-    with open(f"{ID}.cookie", "wb") as cookie_file:
-        pickle.dump(_driver.get_cookies(), cookie_file)
+    else:
+        _driver.get(f"{base_url}/player/")
+        with open(cookie_file, "wb") as cookie_file:
+            pickle.dump(_driver.get_cookies(), cookie_file)
 
     patrol_action(_driver)
 

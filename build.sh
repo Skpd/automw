@@ -11,8 +11,13 @@ else
   image_version="$1"
 fi
 
+if [ -z "$2" ]; then
+  dockerfile="Dockerfile"
+else
+  dockerfile="$2.Dockerfile"
+fi
 
-if ! docker build . -t "${image_name}:${image_version}"; then
+if ! docker build . --tag "${image_name}:${image_version}" --file "${dockerfile}"; then
   echo "Failed to build the image."
   exit 1
 fi
